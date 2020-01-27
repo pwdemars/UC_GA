@@ -47,4 +47,4 @@ init_status = all_kwargs.get('init_status')
 seed_schedule = convert_to_integer(random_schedule, init_status)
 
 # Run GA
-best_genotype, results_3 = run_genetic_algorithm(number_of_generations, seed_schedule, **all_kwargs)
+best_genotype, results = run_genetic_algorithm(number_of_generations, seed_schedule, **all_kwargs)
