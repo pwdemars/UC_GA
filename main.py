@@ -1,13 +1,28 @@
 #!/usr/bin/env python3
 """
-Run the genetic algorithm.
+Run the genetic algorithm. 
+
+There are 2 data inputs to the GA:
+    
+1. demand: should be a .txt file with the demand profile. Can be any length.
+2. gen_info: a .csv file with the following variables:
+    - min_output: minimum generation (MW)
+    - max_output: maximum generation (MW)
+    - status: generator's initial status (integer-encoded)
+    - a, b, c: coefficients for quadratic fuel cost curve of the form 
+    cost = a*E^2 + b*E + c, where E is the energy delivered by the generator in 
+    the time period (E = power if periods are 1 hour). 
+    - t_min_down: minimum number of periods that generator must spend offline 
+    before being turned on
+    - t_min_up: minimum number of periods that generator must spend online before 
+    being turned off.
+    - hot_cost: cost for a hot start ($)
+    - cold_cost: cost for a cold start ($)
+    - cold_hrs: hot start if downtime (in *periods*) <= cold_hrs, otherwise
+    a cold start.
 """
 import pandas as pd
 import numpy as np
-import sys
-import os
-
-sys.path.insert(1, '/Users/patrickdemars/Documents/Projects/UC_GA/UC_GA')
 
 from genetic_algorithm import run_genetic_algorithm
 from helpers import convert_to_integer
