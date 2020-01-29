@@ -31,7 +31,7 @@ from economic_dispatch import economic_dispatch
 
 
 # Change demand profile here
-demand = np.genfromtxt('data/kazarlis_demand.txt')
+demand = np.genfromtxt('data/ng_scaled_demand_48.txt')
 
 # Change gen_info here
 gen_info = pd.read_csv('data/kazarlis_units.csv')
@@ -49,11 +49,11 @@ all_kwargs = {'demand': demand,
               'window_mutation_probability': 0.3,
               'swap_window_hc_probability': 0.3,
               'pop_size': 50,
-              'n_hrs': 1, # resolution of settlement periods (1 if hourly, etc.)
+              'n_hrs': 0.5, # resolution of settlement periods (1 if hourly, etc.)
               'max_penalty': 1e5}
 
 # Set the number of generations
-number_of_generations = 100
+number_of_generations = 500
 
 # Number of generators and periods
 num_gen = gen_info.shape[0]
