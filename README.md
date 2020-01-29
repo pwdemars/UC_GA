@@ -8,3 +8,4 @@ Features of the Kazarlis paper which are not yet included in this implementation
 
 - Fitness scaling: non-linear scaling of the fitness function to emphasise differences in low-cost schedules (e.g. log function).
 - Adaptation of operator probabilities: varying the operator probabilities over time may improve performance.
+- Roulette wheel sampling of genotypes
