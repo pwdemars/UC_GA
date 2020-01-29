@@ -45,6 +45,40 @@ class Population(object):
         best_idxs = np.argsort(fitnesses)[:2]
         return list(np.array(self.genotypes)[best_idxs])
     
+    def select_two_genotypes(self):
+        """
+        Select genotypes using a non-linear transformation of fitness. 
+        
+        The transformation applied here is that which is described in the Kazarlis
+        paper. All fitnesses within 1% of the current best solution are 
+        divided by 10. Then the inverse of the fitnesses is used to convert to 
+        a probability distribution.
+        
+        Returns:
+            - g1, g2 (Genotype objects)
+        """
+        all_fitness = np.array([x.fitness for x in self.genotypes])
+        N = all_fitness.size
+        
+        # Best fitness 
+        best = np.min(all_fitness)
+        
+        # Transform the fitness function
+        all_fitness_transformed = np.where(all_fitness < 1.01*best, all_fitness/10, all_fitness)
+        
+#        # Transform the fitness function
+#        all_fitness_transformed = np.exp(-all_fitness/1e5)
+        
+        # Convert to probability distribution 
+        p = (1/all_fitness_transformed)/np.sum(1/all_fitness_transformed)
+        
+        # Select 
+        idx1, idx2 = np.random.choice(np.arange(N), size=2, replace=False, p=p)
+        g1 = self.genotypes[idx1]
+        g2 = self.genotypes[idx2]
+        
+        return g1, g2
+    
     def reset(self):
         self.genotypes = []
         self.num_used = 0
@@ -62,6 +96,7 @@ class Genotype(object):
         self.voll = kwargs.get('voll')
         self.constraint_penalty = kwargs.get('constraint_penalty')
         self.reserve_margin = kwargs.get('reserve_margin')
+        self.n_hrs = kwargs.get('n_hrs')
         
         # Calculate the fitness
         self.fitness = self.calculate_fitness()
@@ -78,7 +113,7 @@ class Genotype(object):
         # Get economic dispatch and ENS
         dispatch, ens = economic_dispatch(self.gen_info, self.schedule, self.demand)
         # Calculate fuel costs
-        fuel_costs = np.sum(calculate_fuel_costs(dispatch, self.gen_info))
+        fuel_costs = np.sum(calculate_fuel_costs(dispatch, self.gen_info, self.n_hrs))
         # Calculate lost load costs
         lost_load_costs = np.sum(ens*self.voll)
         # Calculate start costs

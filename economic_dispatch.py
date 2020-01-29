@@ -48,10 +48,10 @@ def economic_dispatch_period(gen_info, schedule, demand):
     """
     action = np.where(schedule > 0, 1, 0)
     idx = np.where(np.array(action) == 1)[0]
-    on_a = np.array(gen_info['a'][idx])
-    on_b = np.array(gen_info['b'][idx])
-    on_min = np.array(gen_info['min_output'][idx])
-    on_max = np.array(gen_info['max_output'][idx]) 
+    on_a = gen_info['a'].to_numpy()[idx]
+    on_b = gen_info['b'].to_numpy()[idx]
+    on_min = gen_info['min_output'].to_numpy()[idx]
+    on_max = gen_info['max_output'].to_numpy()[idx]
     disp = np.zeros(gen_info.shape[0])
     ens = 0
     lambda_lo = 0
@@ -88,10 +88,10 @@ def lambda_iteration(load, lambda_low, lambda_high, a, b, mins, maxs, epsilon):
     lambda_low = np.float(lambda_low)
     lambda_high = np.float(lambda_high)
     lambda_mid = 0
-    total_output = sum(calculate_loads(lambda_high, a, b, mins, maxs, num_gen))
+    total_output = np.sum(calculate_loads(lambda_high, a, b, mins, maxs, num_gen))
     while abs(total_output - load) > epsilon:
         lambda_mid = (lambda_high + lambda_low)/2
-        total_output = sum(calculate_loads(lambda_mid, a, b, mins, maxs, num_gen))
+        total_output = np.sum(calculate_loads(lambda_mid, a, b, mins, maxs, num_gen))
         if total_output - load > 0:
             lambda_high = lambda_mid
         else:
@@ -104,14 +104,8 @@ def calculate_loads(lm, a, b, mins, maxs, num_gen):
     a, b: coefficients for quadratic curves of the form cost = a^2p + bp + c
     num_gen: number of generators
     
-    Returns a list of individual generator outputs. 
+    Returns an array of individual generator outputs. 
     """
-    powers = []
-    for i in range(num_gen):
-        p = (lm - b[i])/a[i]
-        if p < mins[i]:
-            p = mins[i]
-        elif p > maxs[i]:
-            p = maxs[i]
-        powers.append(p)
+    p = (lm - b)/a
+    powers = np.where(p < mins, mins, np.where(p > maxs, maxs, p))
     return powers

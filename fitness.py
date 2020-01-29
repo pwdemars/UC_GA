@@ -34,15 +34,20 @@ def calculate_schedule_fitness(schedule, **kwargs):
     init_status = kwargs.get('init_status')
     constraint_penalty = kwargs.get('constraint_penalty')
     reserve_margin = kwargs.get('reserve_margin')
+    n_hrs = kwargs.get('n_hrs')
     
     # Get economic dispatch and ENS
     dispatch, ens = economic_dispatch(gen_info, schedule, demand)
+    
     # Calculate fuel costs
-    fuel_costs = np.sum(calculate_fuel_costs(dispatch, gen_info))
+    fuel_costs = np.sum(calculate_fuel_costs(dispatch, gen_info, n_hrs))
+    
     # Calculate lost load costs
     lost_load_costs = np.sum(ens*voll)
+    
     # Calculate start costs
     start_costs = np.sum(calculate_start_costs(gen_info, schedule, init_status))
+    
     # Calculate constraint costs 
     constraint_costs = calculate_constraint_costs(schedule, gen_info, init_status, 
                                                   constraint_penalty, demand, reserve_margin)
@@ -52,7 +57,7 @@ def calculate_schedule_fitness(schedule, **kwargs):
     
     return fitness
 
-def calculate_fuel_costs(dispatch, gen_info):
+def calculate_fuel_costs(dispatch, gen_info, n_hrs):
     """
     Calculate the fuel costs over all the periods in a dispatch schedule 
     of dimension (T,N). 
@@ -68,11 +73,11 @@ def calculate_fuel_costs(dispatch, gen_info):
     fuel_costs = np.zeros(T)
     for t in range(T):
         dispatch_period = dispatch[t]
-        costs_period = calculate_costs_period(dispatch_period, gen_info)
+        costs_period = calculate_costs_period(dispatch_period, gen_info, n_hrs)
         fuel_costs[t] = np.sum(costs_period)
     return fuel_costs
         
-def calculate_costs_period(outputs, gen_info, n_hrs=1):
+def calculate_costs_period(outputs, gen_info, n_hrs):
     """Calculate production costs for units in a  given period. 
     Quadratic cost curves are of the form: cost = (a^2(x) + b(x) + c)*time_in_hours
     
@@ -85,9 +90,9 @@ def calculate_costs_period(outputs, gen_info, n_hrs=1):
         - cost_list: a list of production costs for each unit. 
     """
     num_gen = gen_info.shape[0]
-    a = np.array(gen_info['a'])
-    b = np.array(gen_info['b'])
-    c = np.array(gen_info['c'])
+    a = gen_info['a'].to_numpy()
+    b = gen_info['b'].to_numpy()
+    c = gen_info['c'].to_numpy()
     costs = np.zeros(num_gen)
     for i in range(num_gen):
         if outputs[i] == 0:
@@ -134,9 +139,9 @@ def calculate_start_costs_period(gen_info, status, prev_status):
         - start_costs (array): array of length N, the start costs for each unit. 
     """
     num_gen = gen_info.shape[0]
-    cold_hrs = np.array(gen_info['cold_hrs'])
-    cold_cost = np.array(gen_info['cold_cost'])
-    hot_cost = np.array(gen_info['hot_cost'])
+    cold_hrs = gen_info['cold_hrs'].to_numpy()
+    cold_cost = gen_info['cold_cost'].to_numpy()
+    hot_cost = gen_info['hot_cost'].to_numpy()
     
     action = np.where(status > 0, 1, 0)
     prev_action = np.where(prev_status > 0, 1, 0)
@@ -187,7 +192,7 @@ def calculate_constraint_costs(integer_schedule, gen_info, init_status, penalty,
 def calculate_constraint_costs_period(gen_info, status, prev_status, penalty, reserve_margin, demand_period):
     """
     Calculate the number of constraint violations between consecutive periods.
-    
+    cmax(aw)
     Args:
         - gen_info (data frame): generator specs
         - status (array): status at time N 
@@ -200,9 +205,9 @@ def calculate_constraint_costs_period(gen_info, status, prev_status, penalty, re
         - constraint_costs (float): the constraint costs for that period. 
     """
     num_gen = gen_info.shape[0]
-    t_min_down = np.array(gen_info['t_min_down'])
-    t_min_up = np.array(gen_info['t_min_up'])
-    
+    t_min_down = gen_info['t_min_down'].to_numpy()
+    t_min_up = gen_info['t_min_down'].to_numpy()
+
     # Convert schedule to binary 
     action = np.where(status > 0, 1, 0)
     prev_action = np.where(prev_status > 0, 1, 0)

@@ -6,6 +6,5 @@ This algorithm will be used as a benchmark for reinforcement learning solutions 
 
 Features of the Kazarlis paper which are not yet included in this implementation include: 
 
-- Fitness scaling: non-linear scaling of the fitness function to emphasise differences in low-cost schedules (e.g. log function).
-- Adaptation of operator probabilities: varying the operator probabilities over time may improve performance.
-- Roulette wheel sampling of genotypes
+- Adaptation of operator probabilities: varying the operator probabilities over time may improve performance. This may include being able to determine premature convergence and correspondingly adjusting the mutation (promoting diversity) and crossover (promoting convergence). 
+- Multi-point crossover

@@ -8,53 +8,61 @@ genotypes.
 """
 import numpy as np
 
-from helpers import *
+from helpers import convert_to_binary, convert_to_integer
 from operators import *
 from genotype import Genotype, Population
 
-def run_genetic_algorithm(number_of_generations, seed_schedule, **kwargs):
+def run_genetic_algorithm(number_of_generations, seed_schedules, **kwargs):
     """
     Run the genetic algorithm. 
+    
+    Args:
+        - seed schedules (array): this should be an array of dimension
+        pop_size*T*num_gen, comprising pop_size random binary schedules. 
     """
     # Retrieve variables
-    mutation_probability = kwargs.get('mutation_probability')
     init_status = kwargs.get('init_status')
     pop_size = kwargs.get('pop_size')
-    swap_window_hc_probability = kwargs.get('swap_window_hc_probability')
+    swap_window_hc_probability = kwargs.get('swap_window_hc_probability')    
     
-    # Initialise the best_genotype with the seed schedule. 
-    best_genotype1 = Genotype(seed_schedule, **kwargs)
-    
-    # Mutate the best_genotype schedule to get second Genotype for population
-    binary_schedule = convert_to_binary(seed_schedule)
-    mutated_binary_schedule = mutate(binary_schedule, mutation_probability)
-    mutated_integer_schedule = convert_to_integer(mutated_binary_schedule, init_status)
-    best_genotype2 = Genotype(mutated_integer_schedule, **kwargs)
-    
-    # Initialise the population
-    pop = Population(pop_size)
-    
+    # Initialise parent population
+    parent_population = Population(pop_size)
+    # Population with seed_schedules (typically random)
+    for i in range(pop_size):
+        g = Genotype(convert_to_integer(seed_schedules[i], init_status), **kwargs)
+        parent_population.add_genotype(g)
+        
+    # Get best genotype
+    best_genotype1 = parent_population.best_two_genotypes()[0]
+
     # Initialise results list
     results = []
     
     for g in range(number_of_generations):
+        
+        # Initialise new population
+        new_population = Population(pop_size)
+        
         # Increase the value of the penalty
         new_penalty = kwargs.get('max_penalty')*(g+1)/number_of_generations
         kwargs.update({'constraint_penalty':new_penalty})
         
         # Always add the best genotype
-        pop.add_genotype(best_genotype1)
+        new_population.add_genotype(best_genotype1)
         
-        while pop.num_used < pop.size:
+        while new_population.num_used < new_population.size:
+            # Roulette wheel selection
+            g1, g2 = parent_population.select_two_genotypes()       
+            
             # Create a new offspring
-            offspring1, offspring2 = generate_offspring(best_genotype1, best_genotype2, **kwargs)
-            pop.add_genotype(offspring1)
-            pop.add_genotype(offspring2)
+            offspring1, offspring2 = generate_offspring(g1, g2, **kwargs)
+            new_population.add_genotype(offspring1)
+            new_population.add_genotype(offspring2)
             
         # Get best genotype and apply hill-climb operators
         # Also update best genotypes.
-        best_genotype1, best_genotype2 = pop.best_two_genotypes()
-        pop.remove_genotype(best_genotype1)
+        best_genotype1, best_genotype2 = new_population.best_two_genotypes()
+        new_population.remove_genotype(best_genotype1)
         
         # Apply swap mutation operator 
         best_binary_schedule = convert_to_binary(best_genotype1.schedule)
@@ -68,9 +76,12 @@ def run_genetic_algorithm(number_of_generations, seed_schedule, **kwargs):
         # Convert back to integer
         best_integer_schedule = convert_to_integer(best_binary_schedule, init_status)
         best_genotype1 = Genotype(best_integer_schedule, **kwargs)
+        
+        # Return best schedule to new_population
+        new_population.add_genotype(best_genotype1)
                 
-        # Reset the population
-        pop.reset()
+        # Make new_population the parent_population
+        parent_population = new_population
         
         # Best fitness, add to results
         best_fitness = best_genotype1.fitness
@@ -78,7 +89,7 @@ def run_genetic_algorithm(number_of_generations, seed_schedule, **kwargs):
         
         print("Best fitness at iteration {0}: {1}".format(g, best_fitness))
         
-    return best_genotype1, results
+    return best_genotype1, results, new_population
 
 def generate_offspring(genotype1, genotype2, **kwargs):
     """
